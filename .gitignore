@@ -9,3 +9,11 @@
 secrets/
 credentials/
 kubeconfig
+
+# Terraform plan and crash files
+*.tfplan
+crash.log
+crash.*.log
+
+# Local Terraform backups
+*.backup
