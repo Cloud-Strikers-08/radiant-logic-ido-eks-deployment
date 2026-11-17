@@ -11,6 +11,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 }
 
@@ -534,4 +539,30 @@ resource "aws_eks_pod_identity_association" "ebs_csi" {
     aws_eks_addon.pod_identity_agent,
     aws_iam_role_policy_attachment.ebs_csi
   ]
+}
+
+# ============================================================
+# EKS OIDC PROVIDER - IRSA FOUNDATION
+# ============================================================
+
+data "aws_eks_cluster" "oidc" {
+  name = aws_eks_cluster.main.name
+}
+
+data "tls_certificate" "eks_oidc" {
+  url = data.aws_eks_cluster.oidc.identity[0].oidc[0].issuer
+}
+
+resource "aws_iam_openid_connect_provider" "eks" {
+  url = data.aws_eks_cluster.oidc.identity[0].oidc[0].issuer
+
+  client_id_list = [
+    "sts.amazonaws.com"
+  ]
+
+  thumbprint_list = [
+    data.tls_certificate.eks_oidc.certificates[0].sha1_fingerprint
+  ]
+
+  tags = local.common_tags
 }
